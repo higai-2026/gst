@@ -157,9 +157,7 @@ exports.generateInvoicePDF = (invoice, client, res) => {
       .text(`Trade: ${client.tradeName}`, leftMargin, billTop + 23);
   }
 
-  const addressText = client.address
-    ? `${client.address}, ${client.city || ''} ${client.state || ''}`
-    : 'Tamil Nadu, India';
+  const addressText = client.address || [client.city, client.state].filter(Boolean).join(', ') || 'Tamil Nadu, India';
 
   doc
     .fillColor('#475569')

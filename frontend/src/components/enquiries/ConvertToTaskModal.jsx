@@ -53,15 +53,23 @@ const ConvertToTaskModal = ({ isOpen, onClose, enquiry, employees = [], onSucces
   const [dueDate, setDueDate] = useState('');
   const [remarks, setRemarks] = useState('');
 
+  // Master Services State
+  const [masterServices, setMasterServices] = useState([]);
+  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [isCustomTitle, setIsCustomTitle] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Load existing clients for linking option
+  // Load existing clients and services for linking option
   useEffect(() => {
     if (isOpen) {
       api.get('/clients')
         .then((res) => setExistingClients(res.data || []))
         .catch((err) => console.warn('Could not load clients:', err));
+      api.get('/services')
+        .then((res) => setMasterServices(res.data || []))
+        .catch((err) => console.warn('Could not load services:', err));
     }
   }, [isOpen]);
 
@@ -143,6 +151,38 @@ const ConvertToTaskModal = ({ isOpen, onClose, enquiry, employees = [], onSucces
   });
 
   const currentSelectedClientObj = existingClients.find((c) => c._id === selectedExistingClient);
+
+  const filteredServices = masterServices.filter((s) => {
+    if (!department) return true;
+    if (department === 'GST') return s.department === 'GST' || s.department === 'GST Filing';
+    if (department === 'Income Tax') return s.department === 'Income Tax' || s.department === 'Income Tax Filing' || s.department === 'IT Filing';
+    if (department === 'Accounts') return s.department === 'Accounts' || s.department === 'Book Keeping';
+    if (department === 'Administration') return s.department === 'Administration';
+    return s.department === department;
+  });
+
+  const groupedServices = filteredServices.reduce((acc, s) => {
+    const group = s.serviceName || 'General Services';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(s);
+    return acc;
+  }, {});
+
+  const handleServiceSelect = (e) => {
+    const val = e.target.value;
+    setSelectedServiceId(val);
+    if (val === 'custom') {
+      setIsCustomTitle(true);
+      return;
+    }
+    const found = masterServices.find((s) => s._id === val);
+    if (found) {
+      setTaskName(found.subServiceName);
+      if (found.description && !remarks.trim()) {
+        setRemarks(found.description);
+      }
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -413,13 +453,13 @@ const ConvertToTaskModal = ({ isOpen, onClose, enquiry, employees = [], onSucces
                   </div>
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      City & State
+                      Address (Optional)
                     </label>
                     <input
                       type="text"
-                      value={`${clientFormData.city}, ${clientFormData.state}`}
-                      onChange={(e) => handleClientFieldChange('city', e.target.value.split(',')[0])}
-                      placeholder="Chennai, Tamil Nadu"
+                      value={clientFormData.address}
+                      onChange={(e) => handleClientFieldChange('address', e.target.value)}
+                      placeholder="e.g. 123 Main Street, Chennai, Tamil Nadu"
                       className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2 text-xs font-medium text-slate-800 outline-none focus:border-[#52A636] focus:bg-white"
                     />
                   </div>
@@ -522,7 +562,10 @@ const ConvertToTaskModal = ({ isOpen, onClose, enquiry, employees = [], onSucces
                   <button
                     key={d}
                     type="button"
-                    onClick={() => setDepartment(d)}
+                    onClick={() => {
+                      setDepartment(d);
+                      setSelectedServiceId('');
+                    }}
                     className={`rounded-xl py-2 px-2 text-xs font-bold transition border cursor-pointer ${
                       department === d
                         ? 'bg-[#52A636] text-white border-[#52A636] shadow-xs'
@@ -537,18 +580,85 @@ const ConvertToTaskModal = ({ isOpen, onClose, enquiry, employees = [], onSucces
 
             {/* Task Title */}
             <div>
-              <label className="text-xs font-bold text-slate-700 flex items-center space-x-1.5 mb-1.5">
-                <FileText className="h-4 w-4 text-[#0A1E3F]" />
-                <span>Task Name / Title *</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={taskName}
-                onChange={(e) => setTaskName(e.target.value)}
-                placeholder="e.g. Enquiry Action: Ramesh Kumar (GST Filing)"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs font-medium text-slate-800 outline-none transition focus:border-[#52A636] focus:bg-white focus:ring-2 focus:ring-[#52A636]/20"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                  <FileText className="h-4 w-4 text-[#0A1E3F]" />
+                  <span>Task Name / Title *</span>
+                </label>
+                {isCustomTitle ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomTitle(false);
+                      setSelectedServiceId('');
+                    }}
+                    className="text-[11px] font-bold text-[#52A636] hover:underline cursor-pointer"
+                  >
+                    ← Select from Master Services
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomTitle(true);
+                      setSelectedServiceId('custom');
+                    }}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer"
+                  >
+                    + Custom Task Title
+                  </button>
+                )}
+              </div>
+
+              {!isCustomTitle ? (
+                <select
+                  required
+                  value={selectedServiceId}
+                  onChange={handleServiceSelect}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs font-semibold text-slate-800 outline-none transition focus:border-[#52A636] focus:bg-white focus:ring-2 focus:ring-[#52A636]/20 cursor-pointer"
+                >
+                  <option value="">-- Select {department} Master Service --</option>
+                  {Object.entries(groupedServices).map(([mainService, items]) => (
+                    <optgroup key={mainService} label={mainService}>
+                      {items.map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.subServiceName} ({s.periodicity || 'Regular'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  {filteredServices.length === 0 && (
+                    <option value="" disabled>
+                      No configured services found for {department}
+                    </option>
+                  )}
+                  <option value="custom">✏️ Enter Custom Task Title...</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  required
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  placeholder="e.g. Enquiry Action: Ramesh Kumar (GST Filing)"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs font-medium text-slate-800 outline-none transition focus:border-[#52A636] focus:bg-white focus:ring-2 focus:ring-[#52A636]/20"
+                />
+              )}
+
+              {!isCustomTitle && selectedServiceId && selectedServiceId !== 'custom' && (
+                <div className="mt-1.5 flex items-center justify-between px-1 text-[11px] text-slate-500">
+                  <span className="truncate pr-2">
+                    Selected: <strong className="text-[#0A1E3F]">{taskName}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomTitle(true)}
+                    className="text-[10px] font-bold text-slate-500 hover:text-[#52A636] underline cursor-pointer shrink-0"
+                  >
+                    Edit Title Text
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Assignee, Priority, Deadline */}

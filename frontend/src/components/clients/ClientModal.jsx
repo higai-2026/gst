@@ -448,6 +448,17 @@ const ClientModal = ({ isOpen, onClose, onRefresh, employees = [], client = null
                 />
               </div>
             </div>
+            <div className="mt-2">
+              <label className="text-[11px] font-semibold text-slate-700">Address</label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="Full address (including city, state, pincode)..."
+                className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs outline-none focus:border-[#52A636]"
+              />
+            </div>
           </div>
 
           {/* STEP 2: Service Subscriptions with Search & Multi-Select */}
@@ -582,7 +593,7 @@ const ClientModal = ({ isOpen, onClose, onRefresh, employees = [], client = null
               <CreditCard className="h-4 w-4 text-[#52A636]" />
               <span>Step 3: Tax & Business Details</span>
             </h4>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="text-[11px] font-semibold text-slate-700">Trade Name</label>
                 <input
@@ -616,26 +627,16 @@ const ClientModal = ({ isOpen, onClose, onRefresh, employees = [], client = null
                   className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs uppercase outline-none focus:border-[#52A636]"
                 />
               </div>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-700">State</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs outline-none focus:border-[#52A636]"
-                />
-              </div>
             </div>
           </div>
 
-          {/* STEP 4: Financials & Location */}
+          {/* STEP 4: Financial Setup */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <h4 className="text-xs font-extrabold text-[#0A1E3F] flex items-center space-x-1.5">
               <ShieldCheck className="h-4 w-4 text-[#52A636]" />
               <span>Step 4: Financial Setup</span>
             </h4>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[11px] font-semibold text-slate-700">Opening Balance (₹)</label>
                 <input
@@ -657,16 +658,6 @@ const ClientModal = ({ isOpen, onClose, onRefresh, employees = [], client = null
                   className={`mt-1 w-full rounded-xl border p-2 text-xs outline-none ${
                     isSuperAdmin ? 'border-slate-200 focus:border-[#52A636]' : 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
                   }`}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-700">City / Location</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs outline-none focus:border-[#52A636]"
                 />
               </div>
             </div>
